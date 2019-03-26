@@ -8,9 +8,10 @@ from sqlalchemy.types import VARCHAR
 from sqlalchemy.types import TEXT
 from sqlalchemy.types import BOOLEAN
 
-#pylint: disable=line-too-long, too-many-lines
+# pylint: disable=line-too-long, too-many-lines
 
 DB_VERSION = 12
+
 
 def build_metadata():
     """Build schema def with SqlAlchemy"""
@@ -53,7 +54,7 @@ def build_metadata():
         sa.Column('post_count', sa.Integer, nullable=False, server_default='0'),
         sa.Column('proxy_weight', sa.Float(precision=6), nullable=False, server_default='0'),
         sa.Column('vote_weight', sa.Float(precision=6), nullable=False, server_default='0'),
-        sa.Column('kb_used', sa.Integer, nullable=False, server_default='0'), # deprecated
+        sa.Column('kb_used', sa.Integer, nullable=False, server_default='0'),  # deprecated
         sa.Column('rank', sa.Integer, nullable=False, server_default='0'),
 
         sa.Column('active_at', sa.DateTime, nullable=False, server_default='1970-01-01 00:00:00'),
@@ -61,11 +62,11 @@ def build_metadata():
         sa.Column('raw_json', sa.Text),
 
         sa.UniqueConstraint('name', name='hive_accounts_ux1'),
-        sa.Index('hive_accounts_ix1', 'vote_weight', 'id'), # core: quick ranks
-        sa.Index('hive_accounts_ix2', 'name', 'id'), # core: quick id map
-        sa.Index('hive_accounts_ix3', 'vote_weight', 'name', postgresql_ops=dict(name='varchar_pattern_ops')), # API: lookup
-        sa.Index('hive_accounts_ix4', 'id', 'name'), # API: quick filter/sort
-        sa.Index('hive_accounts_ix5', 'cached_at', 'name'), # core/listen sweep
+        sa.Index('hive_accounts_ix1', 'vote_weight', 'id'),  # core: quick ranks
+        sa.Index('hive_accounts_ix2', 'name', 'id'),  # core: quick id map
+        sa.Index('hive_accounts_ix3', 'vote_weight', 'name', postgresql_ops=dict(name='varchar_pattern_ops')),  # API: lookup
+        sa.Index('hive_accounts_ix4', 'id', 'name'),  # API: quick filter/sort
+        sa.Index('hive_accounts_ix5', 'cached_at', 'name'),  # core/listen sweep
         mysql_engine='InnoDB',
         mysql_default_charset='utf8mb4'
     )
@@ -90,27 +91,27 @@ def build_metadata():
         sa.ForeignKeyConstraint(['community'], ['hive_accounts.name'], name='hive_posts_fk2'),
         sa.ForeignKeyConstraint(['parent_id'], ['hive_posts.id'], name='hive_posts_fk3'),
         sa.UniqueConstraint('author', 'permlink', name='hive_posts_ux1'),
-        sa.Index('hive_posts_ix3', 'author', 'depth', 'id', postgresql_where=sql_text("is_deleted = '0'")), # API: author blog/comments
-        sa.Index('hive_posts_ix4', 'parent_id', 'id', postgresql_where=sql_text("is_deleted = '0'")), # API: fetching children
+        sa.Index('hive_posts_ix3', 'author', 'depth', 'id', postgresql_where=sql_text("is_deleted = '0'")),  # API: author blog/comments
+        sa.Index('hive_posts_ix4', 'parent_id', 'id', postgresql_where=sql_text("is_deleted = '0'")),  # API: fetching children
         mysql_engine='InnoDB',
         mysql_default_charset='utf8mb4'
     )
 
-    #sa.Table(
+    # sa.Table(
     #    'hive_tags', metadata,
     #    sa.Column('id', sa.Integer, primary_key=True),
     #    sa.Column('name', CHAR(64), nullable=False),
     #    sa.UniqueConstraint('name', name='hive_tags_ux1'),
     #    mysql_engine='InnoDB',
     #    mysql_default_charset='utf8mb4'
-    #)
+    # )
 
     sa.Table(
         'hive_post_tags', metadata,
         sa.Column('post_id', sa.Integer, nullable=False),
         sa.Column('tag', sa.String(32), nullable=False),
-        sa.UniqueConstraint('tag', 'post_id', name='hive_post_tags_ux1'), # core
-        sa.Index('hive_post_tags_ix1', 'post_id'), # core
+        sa.UniqueConstraint('tag', 'post_id', name='hive_post_tags_ux1'),  # core
+        sa.Index('hive_post_tags_ix1', 'post_id'),  # core
         mysql_engine='InnoDB',
         mysql_default_charset='utf8mb4'
     )
@@ -122,7 +123,7 @@ def build_metadata():
         sa.Column('state', SMALLINT, nullable=False, server_default='1'),
         sa.Column('created_at', sa.DateTime, nullable=False),
 
-        sa.UniqueConstraint('following', 'follower', name='hive_follows_ux3'), # core
+        sa.UniqueConstraint('following', 'follower', name='hive_follows_ux3'),  # core
         sa.Index('hive_follows_ix5a', 'following', 'state', 'created_at', 'follower'),
         sa.Index('hive_follows_ix5b', 'follower', 'state', 'created_at', 'following'),
         mysql_engine='InnoDB',
@@ -137,8 +138,8 @@ def build_metadata():
 
         sa.ForeignKeyConstraint(['account'], ['hive_accounts.name'], name='hive_reblogs_fk1'),
         sa.ForeignKeyConstraint(['post_id'], ['hive_posts.id'], name='hive_reblogs_fk2'),
-        sa.UniqueConstraint('account', 'post_id', name='hive_reblogs_ux1'), # core
-        sa.Index('hive_reblogs_ix1', 'post_id', 'account', 'created_at'), # API -- TODO: seemingly unused
+        sa.UniqueConstraint('account', 'post_id', name='hive_reblogs_ux1'),  # core
+        sa.Index('hive_reblogs_ix1', 'post_id', 'account', 'created_at'),  # API -- TODO: seemingly unused
         mysql_engine='InnoDB',
         mysql_default_charset='utf8mb4'
     )
@@ -226,8 +227,8 @@ def build_metadata():
         sa.Column('post_id', sa.Integer, nullable=False),
         sa.Column('account_id', sa.Integer, nullable=False),
         sa.Column('created_at', sa.DateTime, nullable=False),
-        sa.UniqueConstraint('post_id', 'account_id', name='hive_feed_cache_ux1'), # core
-        sa.Index('hive_feed_cache_ix1', 'account_id', 'post_id', 'created_at'), # API (and rebuild?)
+        sa.UniqueConstraint('post_id', 'account_id', name='hive_feed_cache_ux1'),  # core
+        sa.Index('hive_feed_cache_ix1', 'account_id', 'post_id', 'created_at'),  # API (and rebuild?)
         mysql_engine='InnoDB',
         mysql_default_charset='utf8mb4'
     )
@@ -238,6 +239,17 @@ def build_metadata():
         sa.Column('author', VARCHAR(16), nullable=False),
         sa.Column('permlink', VARCHAR(255), nullable=False),
         sa.Column('category', VARCHAR(255), nullable=False, server_default=''),
+
+        # Geo-Location
+        sa.Column('latitude'),  # Post gis
+        sa.Column('longitude'),  # Post gis
+        sa.Column('country', VARCHAR(100)),
+        sa.Column('subdivision', VARCHAR(100)),
+        sa.Column('area', VARCHAR(100)),
+        sa.Column('neighbourhood', VARCHAR(100)),
+
+        # Curation score
+        sa.Column('curation_score', sa.Integer, nullable=False, server_default='0'),
 
         # important/index
         sa.Column('depth', SMALLINT, nullable=False, server_default='0'),
@@ -280,15 +292,15 @@ def build_metadata():
         sa.Column('json', sa.Text),
         sa.Column('raw_json', sa.Text),
 
-        sa.Index('hive_posts_cache_ix2', 'promoted', postgresql_where=sql_text("is_paidout = '0' AND promoted > 0")), # API
-        sa.Index('hive_posts_cache_ix3', 'payout_at', 'post_id', postgresql_where=sql_text("is_paidout = '0'")), # core
-        sa.Index('hive_posts_cache_ix6a', 'sc_trend', 'post_id', postgresql_where=sql_text("is_paidout = '0'")), # API: global trending
-        sa.Index('hive_posts_cache_ix7a', 'sc_hot', 'post_id', postgresql_where=sql_text("is_paidout = '0'")), # API: global hot
-        sa.Index('hive_posts_cache_ix6b', 'post_id', 'sc_trend', postgresql_where=sql_text("is_paidout = '0'")), # API: filtered trending
-        sa.Index('hive_posts_cache_ix7b', 'post_id', 'sc_hot', postgresql_where=sql_text("is_paidout = '0'")), # API: filtered hot
-        sa.Index('hive_posts_cache_ix8', 'category', 'payout', 'depth', postgresql_where=sql_text("is_paidout = '0'")), # API: tag stats
-        sa.Index('hive_posts_cache_ix9a', 'depth', 'payout', 'post_id', postgresql_where=sql_text("is_paidout = '0'")), # API: payout
-        sa.Index('hive_posts_cache_ix9b', 'category', 'depth', 'payout', 'post_id', postgresql_where=sql_text("is_paidout = '0'")), # API: filtered payout
+        sa.Index('hive_posts_cache_ix2', 'promoted', postgresql_where=sql_text("is_paidout = '0' AND promoted > 0")),  # API
+        sa.Index('hive_posts_cache_ix3', 'payout_at', 'post_id', postgresql_where=sql_text("is_paidout = '0'")),  # core
+        sa.Index('hive_posts_cache_ix6a', 'sc_trend', 'post_id', postgresql_where=sql_text("is_paidout = '0'")),  # API: global trending
+        sa.Index('hive_posts_cache_ix7a', 'sc_hot', 'post_id', postgresql_where=sql_text("is_paidout = '0'")),  # API: global hot
+        sa.Index('hive_posts_cache_ix6b', 'post_id', 'sc_trend', postgresql_where=sql_text("is_paidout = '0'")),  # API: filtered trending
+        sa.Index('hive_posts_cache_ix7b', 'post_id', 'sc_hot', postgresql_where=sql_text("is_paidout = '0'")),  # API: filtered hot
+        sa.Index('hive_posts_cache_ix8', 'category', 'payout', 'depth', postgresql_where=sql_text("is_paidout = '0'")),  # API: tag stats
+        sa.Index('hive_posts_cache_ix9a', 'depth', 'payout', 'post_id', postgresql_where=sql_text("is_paidout = '0'")),  # API: payout
+        sa.Index('hive_posts_cache_ix9b', 'category', 'depth', 'payout', 'post_id', postgresql_where=sql_text("is_paidout = '0'")),  # API: filtered payout
 
         mysql_engine='InnoDB',
         mysql_default_charset='utf8mb4'
@@ -309,9 +321,11 @@ def build_metadata():
 
     return metadata
 
+
 def teardown(db):
     """Drop all tables"""
     build_metadata().drop_all(db.engine())
+
 
 def setup(db):
     """Creates all tables and seed data"""
@@ -332,22 +346,23 @@ def setup(db):
     for sql in sqls:
         db.query(sql)
 
+
 def reset_autovac(db):
     """Initializes/resets per-table autovacuum/autoanalyze params.
 
     We use a scale factor of 0 and specify exact threshold tuple counts,
     per-table, in the format (autovacuum_threshold, autoanalyze_threshold)."""
 
-    autovac_config = { #    vacuum  analyze
-        'hive_accounts':    (50000, 100000),
+    autovac_config = {  # vacuum  analyze
+        'hive_accounts': (50000, 100000),
         'hive_posts_cache': (25000, 25000),
-        'hive_posts':       (2500, 10000),
-        'hive_post_tags':   (5000, 10000),
-        'hive_follows':     (5000, 5000),
-        'hive_feed_cache':  (5000, 5000),
-        'hive_blocks':      (5000, 25000),
-        'hive_reblogs':     (5000, 5000),
-        'hive_payments':    (5000, 5000),
+        'hive_posts': (2500, 10000),
+        'hive_post_tags': (5000, 10000),
+        'hive_follows': (5000, 5000),
+        'hive_feed_cache': (5000, 5000),
+        'hive_blocks': (5000, 25000),
+        'hive_reblogs': (5000, 5000),
+        'hive_payments': (5000, 5000),
     }
 
     for table, (n_vacuum, n_analyze) in autovac_config.items():
