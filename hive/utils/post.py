@@ -73,6 +73,7 @@ def post_basic(post):
         'is_full_power': is_full_power,
     }
 
+
 def post_legacy(post):
     """Return legacy fields which may be useful to save.
 
@@ -84,6 +85,7 @@ def post_legacy(post):
                'curator_payout_value', 'allow_replies', 'allow_votes',
                'allow_curation_rewards', 'beneficiaries']
     return {k: v for k, v in post.items() if k in _legacy}
+
 
 def post_payout(post):
     """Get current vote/payout data and recalculate trend/hot score."""
@@ -115,10 +117,12 @@ def post_payout(post):
         'sc_hot': sc_hot
     }
 
+
 def _vote_csv_row(vote):
     """Convert a vote object into minimal CSV line."""
     rep = rep_log10(vote['reputation'])
     return "%s,%s,%s,%s" % (vote['voter'], vote['rshares'], vote['percent'], rep)
+
 
 def _score(rshares, created_timestamp, timescale=480000):
     """Calculate trending/hot score.
@@ -130,11 +134,13 @@ def _score(rshares, created_timestamp, timescale=480000):
     sign = 1 if mod_score > 0 else -1
     return sign * order + created_timestamp / timescale
 
+
 def post_stats(post):
     """Get post statistics and derived properties.
 
     Source: contentStats - https://github.com/steemit/condenser/blob/master/src/app/utils/StateFunctions.js#L109
     """
+    # TravelFeed Modification: Total votes means the total percentag of all votes divided by ten ("TravelFeed Miles")
     net_rshares_adj = 0
     neg_rshares = 0
     total_votes = 0
@@ -143,7 +149,7 @@ def post_stats(post):
         if vote['percent'] == 0:
             continue
 
-        total_votes += 1
+        total_votes += round(vote['percent'] / 1000)
         rshares = int(vote['rshares'])
         sign = 1 if vote['percent'] > 0 else -1
         if sign > 0:
