@@ -9,14 +9,16 @@ log = logging.getLogger(__name__)
 
 # Building of legacy account objects
 
+
 async def load_accounts(db, names):
     """`get_accounts`-style lookup for `get_state` compat layer."""
     sql = """SELECT id, name, display_name, about, reputation, vote_weight,
-                    created_at, post_count, profile_image, location, website,
+                    created_at, post_count, profile_image, location, website, facebook, twitter, instagram, youtube, couchsurfing, 
                     cover_image
                FROM hive_accounts WHERE name IN :names"""
     rows = await db.query_all(sql, names=tuple(names))
     return [_condenser_account_object(row) for row in rows]
+
 
 async def load_posts_reblogs(db, ids_with_reblogs, truncate_body=0):
     """Given a list of (id, reblogged_by) tuples, return posts w/ reblog key."""
@@ -32,6 +34,7 @@ async def load_posts_reblogs(db, ids_with_reblogs, truncate_body=0):
             post['reblogged_by'] = list(rby)
 
     return posts
+
 
 async def load_posts(db, ids, truncate_body=0):
     """Given an array of post ids, returns full objects in the same order."""
@@ -74,6 +77,7 @@ async def load_posts(db, ids, truncate_body=0):
 
     return [posts_by_id[_id] for _id in ids]
 
+
 async def _query_author_rep_map(db, posts):
     """Given a list of posts, returns an author->reputation map."""
     if not posts:
@@ -81,6 +85,7 @@ async def _query_author_rep_map(db, posts):
     names = tuple(set([post['author'] for post in posts]))
     sql = "SELECT name, reputation FROM hive_accounts WHERE name IN :names"
     return {r['name']: r['reputation'] for r in await db.query_all(sql, names=names)}
+
 
 def _condenser_account_object(row):
     """Convert an internal account record into legacy-steemd style."""
@@ -95,10 +100,16 @@ def _condenser_account_object(row):
             'profile': {'name': row['display_name'],
                         'about': row['about'],
                         'website': row['website'],
+                        'facebook': row['facebook'],
+                        'twitter': row['twitter'],
+                        'instagram': row['instagram'],
+                        'youtube': row['youtube'],
+                        'couchsurfing': row['couchsurfing'],
                         'location': row['location'],
                         'cover_image': row['cover_image'],
                         'profile_image': row['profile_image'],
-                       }})}
+                        }})}
+
 
 def _condenser_post_object(row, truncate_body=0):
     """Given a hive_posts_cache row, create a legacy-style post object."""
@@ -163,10 +174,12 @@ def _condenser_post_object(row, truncate_body=0):
 
     return post
 
+
 def _amount(amount, asset='SBD'):
     """Return a steem-style amount string given a (numeric, asset-str)."""
     assert asset == 'SBD', 'unhandled asset %s' % asset
     return "%.3f SBD" % amount
+
 
 def _hydrate_active_votes(vote_csv):
     """Convert minimal CSV representation into steemd-style object."""
@@ -175,6 +188,7 @@ def _hydrate_active_votes(vote_csv):
     cols = 'voter,rshares,percent,reputation'.split(',')
     votes = vote_csv.split("\n")
     return [dict(zip(cols, line.split(','))) for line in votes]
+
 
 def _json_date(date=None):
     """Given a db datetime, return a steemd/json-friendly version."""

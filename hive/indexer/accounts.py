@@ -17,6 +17,7 @@ log = logging.getLogger(__name__)
 
 DB = Db.instance()
 
+
 class Accounts:
     """Manages account id map, dirty queue, and `hive_accounts` table."""
 
@@ -74,7 +75,6 @@ class Accounts:
         sql = "SELECT name, id FROM hive_accounts WHERE name IN :names"
         for name, _id in DB.query_all(sql, names=tuple(new_names)):
             cls._ids[name] = _id
-
 
     # account cache methods
     # ---------------------
@@ -167,24 +167,29 @@ class Accounts:
                         account['last_vote_time'])
 
         values = {
-            'name':         account['name'],
-            'created_at':   account['created'],
-            'proxy':        account['proxy'],
-            'post_count':   account['post_count'],
-            'reputation':   rep_log10(account['reputation']),
+            'name': account['name'],
+            'created_at': account['created'],
+            'proxy': account['proxy'],
+            'post_count': account['post_count'],
+            'reputation': rep_log10(account['reputation']),
             'proxy_weight': vests_amount(account['vesting_shares']),
-            'vote_weight':  vote_weight,
-            'active_at':    active_at,
-            'cached_at':    cached_at,
+            'vote_weight': vote_weight,
+            'active_at': active_at,
+            'cached_at': cached_at,
 
-            'display_name':  profile['name'],
-            'about':         profile['about'],
-            'location':      profile['location'],
-            'website':       profile['website'],
+            'display_name': profile['name'],
+            'about': profile['about'],
+            'location': profile['location'],
+            'website': profile['website'],
+            'facebook': profile['facebook'],
+            'twitter': profile['twitter'],
+            'instagram': profile['instagram'],
+            'youtube': profile['youtube'],
+            'couchsurfing': profile['couchsurfing'],
             'profile_image': profile['profile_image'],
-            'cover_image':   profile['cover_image'],
+            'cover_image': profile['cover_image'],
 
             'raw_json': json.dumps(account)}
 
-        bind = ', '.join([k+" = :"+k for k in list(values.keys())][1:])
+        bind = ', '.join([k + " = :" + k for k in list(values.keys())][1:])
         return ("UPDATE hive_accounts SET %s WHERE name = :name" % bind, values)
