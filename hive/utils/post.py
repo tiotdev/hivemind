@@ -143,6 +143,7 @@ def post_stats(post):
     # TravelFeed Modification: Total votes means the total percentag of all votes divided by ten ("TravelFeed Miles")
     net_rshares_adj = 0
     neg_rshares = 0
+    curation_score = 0
     total_votes = 0
     up_votes = 0
     for vote in post['active_votes']:
@@ -150,6 +151,8 @@ def post_stats(post):
             continue
 
         total_votes += round(vote['percent'] / 1000)
+        if vote[voter] == "travelfeed":
+            curation_score = vote['percent']
         rshares = int(vote['rshares'])
         sign = 1 if vote['percent'] > 0 else -1
         if sign > 0:
@@ -176,6 +179,7 @@ def post_stats(post):
         'gray': not has_pending_payout and (author_rep < 1 or is_low_value),
         'author_rep': author_rep,
         'flag_weight': flag_weight,
+        'curation_score': curation_score,
         'total_votes': total_votes,
         'up_votes': up_votes
     }

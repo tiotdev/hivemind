@@ -449,6 +449,7 @@ class CachedPost:
             ('sc_hot',      "%f" % payout['sc_hot']),
             ('flag_weight', "%f" % stats['flag_weight']),
             ('total_votes', "%d" % stats['total_votes']),
+            ('curation_score', "%d" % stats['curation_score']),
             ('up_votes',    "%d" % stats['up_votes']),
             ('is_hidden',   "%d" % stats['hide']),
             ('is_grayed',   "%d" % stats['gray']),
