@@ -49,32 +49,46 @@ def post_basic(post):
     word_count = len(body.split(" "))
     is_travelfeed = 'travelfeed' in tags and word_count > 240
 
-    # Extract location information
+    # Extract GPS coordinates from steemitworldmap tag
     swmregex = r'!\bsteemitworldmap\b\s((?:[-+]?(?:[1-8]?\d(?:\.\d+)?|90(?:\.0+)?)))\s\blat\b\s((?:[-+]?(?:180(?:\.0+)?|(?:(?:1[0-7]\d)|(?:[1-9]?\d))(?:\.\d+)?)))\s\blong\b'
     try:
         geolocation = re.findall(swmregex, body)[0]
-        latitude = geolocation[0]
-        longitude = geolocation[1]
+        latitude = float(round(geolocation[0], 4))
+        longitude = float(round(geolocation[1]))
         geo_location = None  # Todo: Apply PostGIS coordinate format
-        geolocator = Nominatim(user_agent="travelfeed_hive/0.1")
-        rawlocation = geolocator.reverse(str(latitude) + ", " + str(longitude), language="en", timeout=10).raw
-        osm_type = rawlocation['osm_type']
-        osm_id = rawlocation['osm_id']
-        address = rawlocation['address']
-        country_code = address["country_code"]
-        subdivision = address.get('state', None)
-        if subdivision == None:  # Not every location has a state/region/... in Nominatim
-            subdivision = address.get('region', None)
-            if subdivision == None:
-                subdivision = address.get('state_district', None)
-                if subdivision == None:
-                    subdivision = address.get('county', None)
-                    if subdivision == None:
-                        subdivision = None
     except:
         latitude = None
         longitude = None
         geo_location = None
+    if latitude != None:
+        try:
+            geolocator = Nominatim(user_agent="travelfeed_hive/0.1")
+            rawlocation = geolocator.reverse(str(latitude) + ", " + str(longitude), language="en", timeout=10).raw
+            osm_type = rawlocation['osm_type']
+            if osm_type.length > 8:
+                osm_type = None
+            osm_id = int(rawlocation['osm_id'])
+            address = rawlocation['address']
+            country_code = address["country_code"]
+            if country_code.length > 2:
+                country_code = None
+            subdivision = address.get('state', None)
+            if subdivision == None:  # Not every location has a state/region/... in Nominatim
+                subdivision = address.get('region', None)
+                if subdivision == None:
+                    subdivision = address.get('state_district', None)
+                    if subdivision == None:
+                        subdivision = address.get('county', None)
+                        if subdivision == None:
+                            subdivision = None
+            if subdivision.length > 100:
+                subdivision = None
+        except:
+            osm_type = None
+            osm_id = None
+            country_code = None
+            subdivision = None
+    else:
         osm_type = None
         osm_id = None
         country_code = None
@@ -195,7 +209,7 @@ def post_stats(post):
             continue
 
         total_votes += round(vote['percent'] / 1000)
-        if vote[voter] == "travelfeed":
+        if vote['voter'] == "travelfeed":
             curation_score = vote['percent']
         rshares = int(vote['rshares'])
         sign = 1 if vote['percent'] > 0 else -1
