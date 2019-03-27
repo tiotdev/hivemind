@@ -1,9 +1,11 @@
 """Methods for normalizing steemd post metadata."""
-#pylint: disable=line-too-long
+# pylint: disable=line-too-long
 
 import math
+import re
 import ujson as json
 from funcy.seqs import first, distinct
+from geopy.geocoders import Nominatim
 
 from hive.utils.normalize import sbd_amount, rep_log10, safe_img_url, parse_time, utc_timestamp
 
@@ -40,8 +42,43 @@ def post_basic(post):
 
     body = post['body']
     if body.find('\x00') > -1:
-        #url = post['author'] + '/' + post['permlink']
+        # url = post['author'] + '/' + post['permlink']
         body = body.replace('\x00', '[NUL]')
+
+    # Mark valid TravelFeed posts
+    word_count = len(body.split(" "))
+    is_travelfeed = 'travelfeed' in tags and word_count > 240
+
+    # Extract location information
+    swmregex = r'!\bsteemitworldmap\b\s((?:[-+]?(?:[1-8]?\d(?:\.\d+)?|90(?:\.0+)?)))\s\blat\b\s((?:[-+]?(?:180(?:\.0+)?|(?:(?:1[0-7]\d)|(?:[1-9]?\d))(?:\.\d+)?)))\s\blong\b'
+    try:
+        geolocation = re.findall(swmregex, body)[0]
+        latitude = geolocation[0]
+        longitude = geolocation[1]
+        geo_location = None  # Todo: Apply PostGIS coordinate format
+        geolocator = Nominatim(user_agent="travelfeed_hive/0.1")
+        rawlocation = geolocator.reverse(str(latitude) + ", " + str(longitude), language="en", timeout=10).raw
+        osm_type = rawlocation['osm_type']
+        osm_id = rawlocation['osm_id']
+        address = rawlocation['address']
+        country_code = address["country_code"]
+        subdivision = address.get('state', None)
+        if subdivision == None:  # Not every location has a state/region/... in Nominatim
+            subdivision = address.get('region', None)
+            if subdivision == None:
+                subdivision = address.get('state_district', None)
+                if subdivision == None:
+                    subdivision = address.get('county', None)
+                    if subdivision == None:
+                        subdivision = None
+    except:
+        latitude = None
+        longitude = None
+        geo_location = None
+        osm_type = None
+        osm_id = None
+        country_code = None
+        subdivision = None
 
     # payout date is last_payout if paid, and cashout_time if pending.
     is_paidout = (post['cashout_time'][0:4] == '1969')
@@ -64,9 +101,16 @@ def post_basic(post):
         'image': thumb_url,
         'tags': tags,
         'is_nsfw': is_nsfw,
+        'is_travelfeed': is_travelfeed,
+        'latitude': latitude,
+        'longitude': longitude,
+        'geo_location': geo_location,
+        'osm_type': osm_type,
+        'osm_id': osm_id,
+        'country_code': country_code,
+        'subdivision': subdivision,
         'body': body,
         'preview': body[0:1024],
-
         'payout_at': payout_at,
         'is_paidout': is_paidout,
         'is_payout_declined': is_payout_declined,

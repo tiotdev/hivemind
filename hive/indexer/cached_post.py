@@ -19,8 +19,10 @@ DB = Db.instance()
 # levels of post dirtiness, in order of decreasing priority
 LEVELS = ['insert', 'payout', 'update', 'upvote', 'recount']
 
+
 def _keyify(items):
     return dict(map(lambda x: ("val_%d" % x[0], x[1]), enumerate(items)))
+
 
 class CachedPost:
     """Maintain update queue and writing to `hive_posts_cache`."""
@@ -83,7 +85,7 @@ class CachedPost:
     def vote(cls, author, permlink, pid=None):
         """Handle a post dirtied by a `vote` op."""
         cls._dirty('upvote', author, permlink, pid)
-        Accounts.dirty(set([author])) # rep changed
+        Accounts.dirty(set([author]))  # rep changed
 
     @classmethod
     def insert(cls, author, permlink, pid):
@@ -108,7 +110,7 @@ class CachedPost:
         DB.query("DELETE FROM hive_posts_cache WHERE post_id = :id", id=post_id)
 
         # if it was queued for a write, remove it
-        url = author+'/'+permlink
+        url = author + '/' + permlink
         if url in cls._queue:
             del cls._queue[url]
             if url in cls._ids:
@@ -153,7 +155,7 @@ class CachedPost:
     @classmethod
     def flush(cls, steem, trx=False, spread=1, full_total=None):
         """Process all posts which have been marked as dirty."""
-        cls._load_noids() # load missing ids
+        cls._load_noids()  # load missing ids
         assert spread == 1, "not fully tested, use with caution"
 
         counts = {}
@@ -187,7 +189,7 @@ class CachedPost:
         """
         mode = LEVELS.index(level)
         urls = [url for url, i in cls._queue.items() if i == mode]
-        if fraction > 1 and level != 'insert': # inserts must be full flush
+        if fraction > 1 and level != 'insert':  # inserts must be full flush
             urls = urls[0:math.ceil(len(urls) / fraction)]
         return [(url, cls._get_id(url), level) for url in urls]
 
@@ -241,7 +243,7 @@ class CachedPost:
         for (pid, author, permlink) in paidout:
             authors.add(author)
             cls._dirty('payout', author, permlink, pid)
-        Accounts.dirty(authors) # force-update accounts on payout
+        Accounts.dirty(authors)  # force-update accounts on payout
 
         if len(paidout) > 200:
             log.info("[PREP] Found %d payouts for %d authors since %s",
@@ -271,7 +273,7 @@ class CachedPost:
         if gap:
             missing = cls._select_missing_tuples(last_cached_id, limit)
             for pid, author, permlink, promoted in missing:
-                if promoted > 0: # ensure we don't miss promote amount
+                if promoted > 0:  # ensure we don't miss promote amount
                     cls.update_promoted_amount(pid, promoted)
                 cls._dirty('insert', author, permlink, pid)
 
@@ -307,7 +309,7 @@ class CachedPost:
 
         timer = Timer(total=len(tuples), entity='post',
                       laps=['rps', 'wps'], full_total=full_total)
-        tuples = sorted(tuples, key=lambda x: x[1]) # enforce ASC id's
+        tuples = sorted(tuples, key=lambda x: x[1])  # enforce ASC id's
 
         for tups in partition_all(1000, tuples):
             timer.batch_start()
@@ -388,7 +390,7 @@ class CachedPost:
         assert post['author'], "post {} is blank".format(pid)
 
         # last-minute sanity check to ensure `pid` is correct #78
-        pid2 = cls._get_id(post['author']+'/'+post['permlink'])
+        pid2 = cls._get_id(post['author'] + '/' + post['permlink'])
         assert pid == pid2, "hpc id %d maps to %d" % (pid, pid2)
 
         # inserts always sequential. if pid > last_id, this operation
@@ -404,33 +406,41 @@ class CachedPost:
         # immutable; write only once (*edge case: undeleted posts)
         if level == 'insert':
             values.extend([
-                ('author',   post['author']),
+                ('author', post['author']),
                 ('permlink', post['permlink']),
                 ('category', post['category']),
-                ('depth',    post['depth'])])
+                ('depth', post['depth'])])
 
         # always write, unless simple vote update
         if level in ['insert', 'payout', 'update']:
             basic = post_basic(post)
             values.extend([
-                ('created_at',    post['created']),    # immutable*
-                ('updated_at',    post['last_update']),
-                ('title',         post['title']),
-                ('payout_at',     basic['payout_at']), # immutable*
-                ('preview',       basic['preview']),
-                ('body',          basic['body']),
-                ('img_url',       basic['image']),
-                ('is_nsfw',       basic['is_nsfw']),
-                ('is_declined',   basic['is_payout_declined']),
+                ('created_at', post['created']),    # immutable*
+                ('updated_at', post['last_update']),
+                ('title', post['title']),
+                ('payout_at', basic['payout_at']),  # immutable*
+                ('preview', basic['preview']),
+                ('is_travelfeed', basic['is_travelfeed']),
+                ('latitude', basic['latitude']),
+                ('longitude', basic['longitude']),
+                ('geo_location', basic['geo_location']),
+                ('osm_type', basic['osm_type']),
+                ('osm_id', basic['osm_id']),
+                ('country_code', basic['country_code']),
+                ('subdivision', basic['subdivision']),
+                ('body', basic['body']),
+                ('img_url', basic['image']),
+                ('is_nsfw', basic['is_nsfw']),
+                ('is_declined', basic['is_payout_declined']),
                 ('is_full_power', basic['is_full_power']),
-                ('is_paidout',    basic['is_paidout']),
-                ('json',          json.dumps(basic['json_metadata'])),
-                ('raw_json',      json.dumps(post_legacy(post))),
+                ('is_paidout', basic['is_paidout']),
+                ('json', json.dumps(basic['json_metadata'])),
+                ('raw_json', json.dumps(post_legacy(post))),
             ])
 
         # update tags if action is insert/update and is root post
         if level in ['insert', 'update'] and not post['depth']:
-            diff = level != 'insert' # do not attempt tag diff on insert
+            diff = level != 'insert'  # do not attempt tag diff on insert
             tag_sqls.extend(cls._tag_sqls(pid, basic['tags'], diff=diff))
 
         # if there's a pending promoted value to write, pull it out
@@ -442,19 +452,19 @@ class CachedPost:
         payout = post_payout(post)
         stats = post_stats(post)
         values.extend([
-            ('payout',      "%f" % payout['payout']),
-            ('rshares',     "%d" % payout['rshares']),
-            ('votes',       "%s" % payout['csvotes']),
-            ('sc_trend',    "%f" % payout['sc_trend']),
-            ('sc_hot',      "%f" % payout['sc_hot']),
+            ('payout', "%f" % payout['payout']),
+            ('rshares', "%d" % payout['rshares']),
+            ('votes', "%s" % payout['csvotes']),
+            ('sc_trend', "%f" % payout['sc_trend']),
+            ('sc_hot', "%f" % payout['sc_hot']),
             ('flag_weight', "%f" % stats['flag_weight']),
             ('total_votes', "%d" % stats['total_votes']),
             ('curation_score', "%d" % stats['curation_score']),
-            ('up_votes',    "%d" % stats['up_votes']),
-            ('is_hidden',   "%d" % stats['hide']),
-            ('is_grayed',   "%d" % stats['gray']),
-            ('author_rep',  "%f" % stats['author_rep']),
-            ('children',    "%d" % min(post['children'], 32767)),
+            ('up_votes', "%d" % stats['up_votes']),
+            ('is_hidden', "%d" % stats['hide']),
+            ('is_grayed', "%d" % stats['gray']),
+            ('author_rep', "%f" % stats['author_rep']),
+            ('children', "%d" % min(post['children'], 32767)),
         ])
 
         # if recounting, update the parent next pass.
@@ -487,7 +497,7 @@ class CachedPost:
             params = _keyify(to_add)
             vals = ["(:id, :%s)" % key for key in params.keys()]
             sql = "INSERT INTO hive_post_tags (post_id, tag) VALUES %s"
-            sql += " ON CONFLICT DO NOTHING" # (conflicts due to collation)
+            sql += " ON CONFLICT DO NOTHING"  # (conflicts due to collation)
             yield (sql % ','.join(vals), {'id': pid, **params})
 
     @classmethod

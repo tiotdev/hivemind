@@ -241,12 +241,16 @@ def build_metadata():
         sa.Column('category', VARCHAR(255), nullable=False, server_default=''),
 
         # Geo-Location
-        sa.Column('latitude'),  # Post gis
-        sa.Column('longitude'),  # Post gis
-        sa.Column('country', VARCHAR(100)),
+        sa.Column('latitude', sa.Float(precision=4)),  # FLOAT
+        sa.Column('longitude', sa.Float(precision=4)),  # FLOAT
+        sa.Column('geo_location', VARCHAR(1)),  # postgis
+        sa.Column('osm_type', VARCHAR(8)),
+        sa.Column('osm_id', sa.Integer),
+        sa.Column('country_code', VARCHAR(2)),
         sa.Column('subdivision', VARCHAR(100)),
-        sa.Column('area', VARCHAR(100)),
-        sa.Column('neighbourhood', VARCHAR(100)),
+
+        # Check if post is valid TravelFeed post
+        sa.Column('is_travelfeed', BOOLEAN, nullable=False, server_default='0'),
 
         # Curation score
         sa.Column('curation_score', sa.Integer, nullable=False, server_default='0'),
