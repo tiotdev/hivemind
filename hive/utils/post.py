@@ -51,49 +51,61 @@ def post_basic(post):
 
     # Extract GPS coordinates from steemitworldmap tag
     swmregex = r'!\bsteemitworldmap\b\s((?:[-+]?(?:[1-8]?\d(?:\.\d+)?|90(?:\.0+)?)))\s\blat\b\s((?:[-+]?(?:180(?:\.0+)?|(?:(?:1[0-7]\d)|(?:[1-9]?\d))(?:\.\d+)?)))\s\blong\b'
-    try:
-        geolocation = re.findall(swmregex, body)[0]
-        latitude = float(round(geolocation[0], 4))
-        longitude = float(round(geolocation[1]))
-        geo_location = None  # Todo: Apply PostGIS coordinate format
-    except:
-        latitude = None
-        longitude = None
-        geo_location = None
-    if latitude != None:
+    if is_travelfeed:
         try:
-            geolocator = Nominatim(user_agent="travelfeed_hive/0.1")
-            rawlocation = geolocator.reverse(str(latitude) + ", " + str(longitude), language="en", timeout=10).raw
-            osm_type = rawlocation['osm_type']
-            if osm_type.length > 8:
-                osm_type = None
-            osm_id = int(rawlocation['osm_id'])
-            address = rawlocation['address']
-            country_code = address["country_code"]
-            if country_code.length > 2:
-                country_code = None
-            subdivision = address.get('state', None)
-            if subdivision == None:  # Not every location has a state/region/... in Nominatim
-                subdivision = address.get('region', None)
-                if subdivision == None:
-                    subdivision = address.get('state_district', None)
+            geolocation = re.findall(swmregex, body)[0]
+            latitude = round(float(geolocation[0]), 4)
+            longitude = round(float(geolocation[1]), 4)
+            geo_location = 'POINT('+str(latitude)+' '+str(longitude)+')'            
+        except Exception as err:
+            latitude = None
+            longitude = None
+            geo_location = None
+        if latitude != None:
+            try:
+                geolocator = Nominatim(user_agent="travelfeed_hive/0.1")
+                rawlocation = geolocator.reverse(str(latitude) + ", " + str(longitude), language="en", timeout=10).raw
+                osm_type = rawlocation['osm_type']
+                if len(osm_type) > 8:
+                    osm_type = None
+                osm_id = rawlocation['osm_id']
+                if osm_id == "":
+                    osm_id = None
+                else:
+                    osm_id = int(osm_id)
+                address = rawlocation['address']
+                country_code = address["country_code"]
+                if len(country_code) > 2:
+                    country_code = None
+                subdivision = address.get('state', None)
+                if subdivision == None:  # Not every location has a state/region/... in Nominatim
+                    subdivision = address.get('region', None)
                     if subdivision == None:
-                        subdivision = address.get('county', None)
+                        subdivision = address.get('state_district', None)
                         if subdivision == None:
-                            subdivision = None
-            if subdivision.length > 100:
+                            subdivision = address.get('county', None)
+                            if subdivision == None:
+                                subdivision = None
+                if len(subdivision) > 100:
+                    subdivision = None
+            except Exception as err:
+                osm_type = None
+                osm_id = None
+                country_code = None
                 subdivision = None
-        except:
+        else:
             osm_type = None
             osm_id = None
             country_code = None
             subdivision = None
     else:
+        latitude = None
+        longitude = None
+        geo_location = None
         osm_type = None
         osm_id = None
         country_code = None
         subdivision = None
-
     # payout date is last_payout if paid, and cashout_time if pending.
     is_paidout = (post['cashout_time'][0:4] == '1969')
     payout_at = post['last_payout'] if is_paidout else post['cashout_time']

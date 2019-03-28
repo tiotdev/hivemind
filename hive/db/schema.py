@@ -7,6 +7,7 @@ from sqlalchemy.types import CHAR
 from sqlalchemy.types import VARCHAR
 from sqlalchemy.types import TEXT
 from sqlalchemy.types import BOOLEAN
+from geoalchemy2.types import Geography
 
 # pylint: disable=line-too-long, too-many-lines
 
@@ -243,7 +244,7 @@ def build_metadata():
         # Geo-Location
         sa.Column('latitude', sa.Float(precision=4)),  # FLOAT
         sa.Column('longitude', sa.Float(precision=4)),  # FLOAT
-        sa.Column('geo_location', VARCHAR(1)),  # Todo: postgis
+        Column('geo_location', Geography(geometry_type='POINT', srid=4326)), #PostGIS
         sa.Column('osm_type', VARCHAR(8)),
         sa.Column('osm_id', sa.Integer),
         sa.Column('country_code', VARCHAR(2)),
