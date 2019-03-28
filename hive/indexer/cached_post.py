@@ -428,6 +428,8 @@ class CachedPost:
                 ('osm_id', basic['osm_id']),
                 ('country_code', basic['country_code']),
                 ('subdivision', basic['subdivision']),
+                ('city', basic['city']),
+                ('suburb', basic['suburb']),
                 ('body', basic['body']),
                 ('img_url', basic['image']),
                 ('is_nsfw', basic['is_nsfw']),

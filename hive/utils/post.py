@@ -65,16 +65,14 @@ def post_basic(post):
             try:
                 geolocator = Nominatim(user_agent="travelfeed_hive/0.1")
                 rawlocation = geolocator.reverse(str(latitude) + ", " + str(longitude), language="en", timeout=10).raw
-                osm_type = rawlocation['osm_type']
-                if len(osm_type) > 8:
-                    osm_type = None
+                osm_type = rawlocation['osm_type'][:1]
                 osm_id = rawlocation['osm_id']
                 if osm_id == "":
                     osm_id = None
                 else:
                     osm_id = int(osm_id)
                 address = rawlocation['address']
-                country_code = address["country_code"]
+                country_code = address.get('country_code', None)
                 if len(country_code) > 2:
                     country_code = None
                 subdivision = address.get('state', None)
@@ -88,24 +86,42 @@ def post_basic(post):
                                 subdivision = None
                 if len(subdivision) > 100:
                     subdivision = None
+                city = address.get('city', None)
+                if city == None:
+                    city = address.get('town', None)
+                if len(city) > 100:
+                    city = None
+                suburb = address.get('city_district', None)
+                if suburb == None:
+                    suburb = address.get('suburb', None)
+                    if suburb == None:
+                        suburb = address.get('neighbourhood', None)
+                if len(suburb) > 100:
+                    suburb = None
             except Exception as err:
                 osm_type = None
                 osm_id = None
-                country_code = None
+                country_code= None
                 subdivision = None
+                city = None
+                suburb = None
         else:
             osm_type = None
             osm_id = None
-            country_code = None
+            country_code= None
             subdivision = None
+            city = None
+            suburb = None
     else:
         latitude = None
         longitude = None
         geo_location = None
         osm_type = None
         osm_id = None
-        country_code = None
+        country_code= None
         subdivision = None
+        city = None
+        suburb = None
     # payout date is last_payout if paid, and cashout_time if pending.
     is_paidout = (post['cashout_time'][0:4] == '1969')
     payout_at = post['last_payout'] if is_paidout else post['cashout_time']
@@ -135,6 +151,8 @@ def post_basic(post):
         'osm_id': osm_id,
         'country_code': country_code,
         'subdivision': subdivision,
+        'city': city,
+        'suburb': suburb,
         'body': body,
         'preview': body[0:1024],
         'payout_at': payout_at,
